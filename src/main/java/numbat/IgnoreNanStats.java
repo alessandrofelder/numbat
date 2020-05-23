@@ -62,7 +62,7 @@ public class IgnoreNanStats<T extends RealType<T>> extends ContextCommand {
         resultsTable.appendColumn("3D Mean (ignoring NaNs)");
         resultsTable.appendColumn("3D Std Dev (ignoring NaNs)");
         resultsTable.appendRow(inputImage.getName());
-        resultsTable.set(0,0,mean.getRealDouble());
+        resultsTable.set(0,0, mean.getRealDouble());
         resultsTable.set(1,0, stdDev.getRealDouble());
     }
 
@@ -93,12 +93,4 @@ public class IgnoreNanStats<T extends RealType<T>> extends ContextCommand {
             ij.command().run(IgnoreNanStats.class, true);
         }
     }
-
-    private void addValueAtPosition(Img<DoubleType> image, double valueToAdd, long[] position) {
-        final RandomAccess<DoubleType> access = image.randomAccess();
-        access.setPosition(position);
-        double currentValue = access.get().getRealDouble();
-        access.get().setReal(currentValue+valueToAdd);
-    }
-
 }
