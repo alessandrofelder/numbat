@@ -5,11 +5,10 @@ import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imglib2.Cursor;
-import net.imglib2.RandomAccess;
-import net.imglib2.img.Img;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.DoubleType;
 import org.scijava.ItemIO;
+import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
@@ -34,18 +33,26 @@ public class IgnoreNanStats<T extends RealType<T>> extends ContextCommand {
     ImgPlus<T> inputImage;
 
     @Parameter
+    String rowLabel;
+
+    @Parameter
     OpService opService;
+
+    @Parameter
+    StatusService statusService;
 
     /**
      * The results of the command in a {@link Table}.
      */
     @Parameter(type = ItemIO.OUTPUT, label = "Numbat results")
-    protected Table<DefaultColumn<Double>, Double> resultsTable;
+    static Table<DefaultColumn<Double>, Double> resultsTable =  (Table) new DefaultGenericTable();
+
 
     @Override
     public void run() {
         ArrayList<DoubleType> nonNanValues = new ArrayList<>();
         Cursor<T> cursor = inputImage.cursor();
+        statusService.showStatus("Numbat: Running through image voxels.");
         while(cursor.hasNext())
         {
             cursor.fwd();
@@ -55,15 +62,20 @@ public class IgnoreNanStats<T extends RealType<T>> extends ContextCommand {
             }
         }
 
+        statusService.showStatus("Numbat: Calculating stats.");
         DoubleType mean = opService.stats().mean(nonNanValues);
         DoubleType stdDev = opService.stats().stdDev(nonNanValues);
 
-        resultsTable = (Table) new DefaultGenericTable();
-        resultsTable.appendColumn("3D Mean (ignoring NaNs)");
-        resultsTable.appendColumn("3D Std Dev (ignoring NaNs)");
-        resultsTable.appendRow(inputImage.getName());
-        resultsTable.set(0,0, mean.getRealDouble());
-        resultsTable.set(1,0, stdDev.getRealDouble());
+        if(resultsTable.getColumnCount()==0)
+        {
+            resultsTable.appendColumn("3D Mean (ignoring NaNs)");
+            resultsTable.appendColumn("3D Std Dev (ignoring NaNs)");
+        }
+
+        resultsTable.appendRow(rowLabel);
+        int rowCount = resultsTable.getRowCount();
+        resultsTable.set(0,rowCount-1, mean.getRealDouble());
+        resultsTable.set(1,rowCount-1, stdDev.getRealDouble());
     }
 
     /**
